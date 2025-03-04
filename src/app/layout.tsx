@@ -1,18 +1,19 @@
-import type { Metadata } from "next";
-import { Rubik } from "next/font/google";
-import "./globals.css";
+import './globals.css'
+import type { Metadata } from 'next'
+import { Rubik } from 'next/font/google'
 import Sidebar from '@/components/Sidebar';
 import { AppProvider } from '@/contexts/AppContext';
 
 const rubik = Rubik({ 
-  subsets: ["latin", "hebrew"],
+  subsets: ['latin', 'hebrew'],
   weight: ['300', '400', '500', '600', '700'],
-});
+  variable: '--font-rubik',
+})
 
 export const metadata: Metadata = {
-  title: "מערכת ניהול משמרות",
-  description: "מערכת מתקדמת לניהול משמרות בארגון שלך",
-};
+  title: 'מערכת סידור עבודה',
+  description: 'מערכת לניהול סידור עבודה',
+}
 
 export default function RootLayout({
   children,
@@ -20,20 +21,19 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="he" dir="rtl" suppressHydrationWarning>
-      <head>
-        <meta name="color-scheme" content="light dark" />
-      </head>
-      <body className={`${rubik.className} antialiased`}>
+    <html lang="he" dir="rtl" className={`${rubik.variable} dark`}>
+      <body className={`${rubik.className} antialiased bg-background text-foreground`}>
         <AppProvider>
-          <div className="min-h-screen bg-gray-50 dark:bg-gray-800 transition-colors duration-200">
+          <div className="flex min-h-screen">
             <Sidebar />
-            <main className="mr-64 p-6 transition-all duration-200">
-              {children}
+            <main className="flex-1 mr-64">
+              <div className="container py-8">
+                {children}
+              </div>
             </main>
           </div>
         </AppProvider>
       </body>
     </html>
-  );
+  )
 }

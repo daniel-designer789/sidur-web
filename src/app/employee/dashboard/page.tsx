@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
 import { format, addDays, startOfWeek } from 'date-fns';
 import { he } from 'date-fns/locale';
 
@@ -40,7 +39,7 @@ export default function EmployeeDashboard() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const employeeName = searchParams?.get('name') || '';
-  const [weekStart, setWeekStart] = useState(startOfWeek(new Date(), { locale: he }));
+  const [weekStart] = useState(startOfWeek(new Date(), { locale: he }));
   const [days, setDays] = useState<DayPreference[]>([]);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
 
@@ -108,7 +107,7 @@ export default function EmployeeDashboard() {
 
       setSubmitStatus('success');
       setTimeout(() => setSubmitStatus('idle'), 2000);
-    } catch (error) {
+    } catch {
       setSubmitStatus('error');
       setTimeout(() => setSubmitStatus('idle'), 3000);
     }

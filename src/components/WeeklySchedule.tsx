@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useApp } from '@/contexts/AppContext';
 import { DndContext, DragEndEvent } from '@dnd-kit/core';
 import { format, startOfWeek, addDays } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -60,10 +59,9 @@ const shiftTypes: Record<ShiftType, ShiftTypeConfig> = {
 };
 
 export default function WeeklySchedule() {
-  const { theme } = useApp();
+  const [shifts, setShifts] = useState<Shift[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [selectedShiftType, setSelectedShiftType] = useState<ShiftType>('morning');
-  const [shifts, setShifts] = useState<Shift[]>([]);
   const [isAddingShift, setIsAddingShift] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -77,7 +75,6 @@ export default function WeeklySchedule() {
   );
 
   useEffect(() => {
-    // Load shifts from localStorage
     const loadShifts = () => {
       const savedShifts = localStorage.getItem('shifts');
       if (savedShifts) {
@@ -86,7 +83,6 @@ export default function WeeklySchedule() {
     };
 
     loadShifts();
-    // Set up polling to check for new shifts every 5 seconds
     const interval = setInterval(loadShifts, 5000);
     return () => clearInterval(interval);
   }, []);
@@ -111,7 +107,6 @@ export default function WeeklySchedule() {
         date: format(selectedDay, 'yyyy-MM-dd')
       };
       
-      // Add new shift to existing shifts in localStorage
       const existingShifts = JSON.parse(localStorage.getItem('shifts') || '[]');
       const updatedShifts = [...existingShifts, newShift];
       localStorage.setItem('shifts', JSON.stringify(updatedShifts));
@@ -133,7 +128,6 @@ export default function WeeklySchedule() {
       const newShifts = shifts.filter(s => s.id !== active.id);
       const updatedShifts = [...newShifts, { ...shift, date: new Date(over.id).toISOString().split('T')[0] }];
       
-      // Update shifts in localStorage
       localStorage.setItem('shifts', JSON.stringify(updatedShifts));
       setShifts(updatedShifts);
     }
