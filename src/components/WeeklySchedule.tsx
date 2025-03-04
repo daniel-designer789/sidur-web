@@ -1,16 +1,9 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { DndContext, DragEndEvent } from '@dnd-kit/core';
-import { format, startOfWeek, addDays } from 'date-fns';
-import { he } from 'date-fns/locale';
-
-interface Employee {
-  id: string;
-  name: string;
-  department: string;
-  avatar: string;
-}
+import { useEffect, useState } from 'react';
+import { format, addDays, startOfWeek } from 'date-fns';
+import { he, enUS } from 'date-fns/locale';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Shift {
   id: string;
@@ -20,240 +13,209 @@ interface Shift {
   date: string;
 }
 
-interface ShiftTypeConfig {
-  label: string;
-  startTime: string;
-  endTime: string;
-  color: string;
-}
-
-type ShiftType = 'morning' | 'evening' | 'closing';
-
-const mockEmployees: Employee[] = [
-  { id: '1', name: 'ישראל ישראלי', department: 'תפעול', avatar: '👨‍💼' },
-  { id: '2', name: 'חיים כהן', department: 'תפעול', avatar: '👨‍🔧' },
-  { id: '3', name: 'שרה לוי', department: 'שירות', avatar: '👩‍💼' },
-  { id: '4', name: 'דוד דוידוב', department: 'תפעול', avatar: '👨‍💼' },
-  { id: '5', name: 'רחל רחלי', department: 'שירות', avatar: '👩‍💼' },
-];
-
-const shiftTypes: Record<ShiftType, ShiftTypeConfig> = {
-  morning: {
-    label: 'משמרת בוקר',
-    startTime: '08:00',
-    endTime: '16:00',
-    color: 'bg-blue-100 border-blue-300 text-blue-900 dark:bg-blue-900 dark:border-blue-700 dark:text-blue-200'
-  },
-  evening: {
-    label: 'משמרת ערב',
-    startTime: '16:00',
-    endTime: '24:00',
-    color: 'bg-purple-100 border-purple-300 text-purple-900 dark:bg-purple-900 dark:border-purple-700 dark:text-purple-200'
-  },
-  closing: {
-    label: 'משמרת סגירה',
-    startTime: '17:00',
-    endTime: '01:00',
-    color: 'bg-orange-100 border-orange-300 text-orange-900 dark:bg-orange-900 dark:border-orange-700 dark:text-orange-200'
-  }
-};
-
 export default function WeeklySchedule() {
+  const { t, language, direction } = useLanguage();
   const [shifts, setShifts] = useState<Shift[]>([]);
-  const [selectedEmployee, setSelectedEmployee] = useState('');
-  const [selectedShiftType, setSelectedShiftType] = useState<ShiftType>('morning');
-  const [isAddingShift, setIsAddingShift] = useState(false);
-  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  const weekStart = startOfWeek(new Date());
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-
-  const filteredEmployees = mockEmployees.filter(employee =>
-    employee.name.includes(searchQuery) ||
-    employee.department.includes(searchQuery)
-  );
+  const [weekStart, setWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 0 }));
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [weekOffset, setWeekOffset] = useState(0);
 
   useEffect(() => {
-    const loadShifts = () => {
-      const savedShifts = localStorage.getItem('shifts');
-      if (savedShifts) {
-        setShifts(JSON.parse(savedShifts));
-      }
-    };
-
-    loadShifts();
-    const interval = setInterval(loadShifts, 5000);
-    return () => clearInterval(interval);
+    const savedShifts = localStorage.getItem('shifts');
+    if (savedShifts) {
+      setShifts(JSON.parse(savedShifts));
+    }
   }, []);
 
-  const handleDayClick = (day: Date) => {
-    setSelectedDay(day);
+  useEffect(() => {
+    const newWeekStart = startOfWeek(new Date(), { weekStartsOn: 0 });
+    newWeekStart.setDate(newWeekStart.getDate() + (weekOffset * 7));
+    setWeekStart(newWeekStart);
+  }, [weekOffset]);
+
+  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+
+  const getShiftsForDay = (date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    return shifts.filter(shift => shift.date === dateStr);
   };
 
-  const handleAddShift = () => {
-    if (selectedDay) {
-      setIsAddingShift(true);
+  const getShiftStyle = (type: string) => {
+    switch (type) {
+      case 'morning':
+        return 'bg-blue-500 text-white border-blue-600';
+      case 'evening':
+        return 'bg-purple-500 text-white border-purple-600';
+      case 'closing':
+        return 'bg-orange-500 text-white border-orange-600';
+      default:
+        return 'bg-gray-500 text-white border-gray-600';
     }
   };
 
-  const handleConfirmShift = () => {
-    if (selectedEmployee && selectedShiftType && selectedDay) {
-      const newShift: Shift = {
-        id: Date.now().toString(),
-        employeeId: selectedEmployee,
-        employeeName: mockEmployees.find(emp => emp.id === selectedEmployee)?.name || 'עובד חדש',
-        type: selectedShiftType,
-        date: format(selectedDay, 'yyyy-MM-dd')
-      };
-      
-      const existingShifts = JSON.parse(localStorage.getItem('shifts') || '[]');
-      const updatedShifts = [...existingShifts, newShift];
-      localStorage.setItem('shifts', JSON.stringify(updatedShifts));
-      
-      setShifts(updatedShifts);
-      setIsAddingShift(false);
-      setSelectedEmployee('');
-      setSelectedShiftType('morning');
-      setSelectedDay(null);
+  const getShiftLabel = (type: string) => {
+    switch (type) {
+      case 'morning':
+        return t('shift.morning');
+      case 'evening':
+        return t('shift.evening');
+      case 'closing':
+        return t('shift.closing');
+      default:
+        return type;
     }
   };
 
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (!over) return;
-    
-    const shift = shifts.find(s => s.id === active.id);
-    if (shift) {
-      const newShifts = shifts.filter(s => s.id !== active.id);
-      const updatedShifts = [...newShifts, { ...shift, date: new Date(over.id).toISOString().split('T')[0] }];
-      
-      localStorage.setItem('shifts', JSON.stringify(updatedShifts));
-      setShifts(updatedShifts);
+  const getShiftTime = (type: string) => {
+    switch (type) {
+      case 'morning':
+        return '08:00 - 16:00';
+      case 'evening':
+        return '16:00 - 24:00';
+      case 'closing':
+        return '17:00 - 01:00';
+      default:
+        return '';
     }
-  }
+  };
 
-  function getShiftsForDay(day: Date) {
-    return shifts.filter(shift => 
-      format(new Date(shift.date), 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd')
-    );
-  }
+  const handleClearAllShifts = () => {
+    setShowConfirmDialog(true);
+  };
+
+  const confirmClearAllShifts = () => {
+    localStorage.removeItem('shifts');
+    setShifts([]);
+    setShowConfirmDialog(false);
+  };
+
+  const navigateWeek = (direction: number) => {
+    setWeekOffset(prev => prev + direction);
+  };
 
   return (
-    <div className="p-4 relative">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">לוח משמרות שבועי</h2>
+    <div className="relative">
+      {/* Week Navigation Controls */}
+      <div className="absolute top-0 left-0 z-20 flex items-center space-x-2">
         <button
-          onClick={handleAddShift}
-          disabled={!selectedDay}
-          className={`px-4 py-2 rounded-lg transition-colors duration-200 ${
-            selectedDay 
-              ? 'bg-blue-600 hover:bg-blue-700 text-white'
-              : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-          }`}
+          onClick={() => navigateWeek(-1)}
+          className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          aria-label={language === 'he' ? 'שבוע קודם' : 'Previous Week'}
         >
-          {selectedDay ? 'הוסף משמרת ליום הנבחר' : 'בחר יום להוספת משמרת'}
+          <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          {language === 'he' ? 'שבוע' : 'Week'} {format(weekStart, 'd/M')} - {format(addDays(weekStart, 6), 'd/M')}
+        </span>
+        <button
+          onClick={() => navigateWeek(1)}
+          className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          aria-label={language === 'he' ? 'שבוע הבא' : 'Next Week'}
+        >
+          <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
         </button>
       </div>
 
-      {isAddingShift && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-xl max-w-md w-full">
-            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
-              הוספת משמרת ליום {format(selectedDay!, 'd/M/yyyy')}
-            </h2>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-gray-700 dark:text-gray-300 mb-2">בחר עובד</label>
-                <select
-                  value={selectedEmployee}
-                  onChange={(e) => setSelectedEmployee(e.target.value)}
-                  className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg p-2.5"
-                >
-                  <option value="">בחר עובד</option>
-                  {filteredEmployees.map((employee) => (
-                    <option key={employee.id} value={employee.id}>{employee.name}</option>
-                  ))}
-                </select>
-              </div>
+      {/* Clear All Button */}
+      <div className="absolute top-0 right-0 z-20">
+        <button
+          onClick={handleClearAllShifts}
+          className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors flex items-center"
+        >
+          <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+          {language === 'he' ? 'מחק הכל' : 'Clear All'}
+        </button>
+      </div>
 
-              <div>
-                <label className="block text-gray-700 dark:text-gray-300 mb-2">סוג משמרת</label>
-                <select
-                  value={selectedShiftType}
-                  onChange={(e) => setSelectedShiftType(e.target.value as ShiftType)}
-                  className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg p-2.5"
-                >
-                  <option value="morning">{shiftTypes.morning.label}</option>
-                  <option value="evening">{shiftTypes.evening.label}</option>
-                  <option value="closing">{shiftTypes.closing.label}</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="mt-6 flex justify-end space-x-4">
+      {/* Confirmation Dialog */}
+      {showConfirmDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-sm w-full mx-4 shadow-2xl">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+              {language === 'he' ? 'האם אתה בטוח?' : 'Are you sure?'}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              {language === 'he' 
+                ? 'פעולה זו תמחק את כל המשמרות מהסידור. לא ניתן לבטל פעולה זו.'
+                : 'This action will delete all shifts from the schedule. This cannot be undone.'}
+            </p>
+            <div className="flex justify-end space-x-4">
               <button
-                onClick={() => {
-                  setIsAddingShift(false);
-                  setSelectedEmployee('');
-                  setSelectedShiftType('morning');
-                }}
-                className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-white font-medium py-2 px-4 rounded-lg ml-4"
+                onClick={() => setShowConfirmDialog(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
               >
-                ביטול
+                {language === 'he' ? 'ביטול' : 'Cancel'}
               </button>
               <button
-                onClick={handleConfirmShift}
-                disabled={!selectedEmployee || !selectedShiftType}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={confirmClearAllShifts}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
               >
-                אישור
+                {language === 'he' ? 'כן, מחק הכל' : 'Yes, Clear All'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      <DndContext onDragEnd={handleDragEnd}>
-        <div className="grid grid-cols-7 gap-4">
-          {weekDays.map((day) => (
-            <div
-              key={day.toISOString()}
-              onClick={() => handleDayClick(day)}
-              className={`border rounded-lg p-4 min-h-[200px] transition-colors duration-200 cursor-pointer
-                ${selectedDay && format(selectedDay, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd')
-                  ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
-                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
-                }
-                hover:border-blue-300 dark:hover:border-blue-600`}
-            >
-              <h3 className="font-semibold text-center mb-2 text-gray-900 dark:text-white">
-                {format(day, 'EEEE', { locale: he })}
-              </h3>
-              <p className="text-sm text-center text-gray-600 dark:text-gray-400 mb-4">
-                {format(day, 'd/M/yyyy')}
-              </p>
-              <div className="space-y-2">
-                {getShiftsForDay(day).map(shift => (
-                  <div 
-                    key={shift.id}
-                    className={`p-3 rounded border ${shiftTypes[shift.type].color}`}
-                  >
-                    <div className="font-medium">{shift.employeeName}</div>
-                    <div className="text-sm font-medium">
-                      {shiftTypes[shift.type].label}
-                    </div>
-                    <div className="text-sm mt-1 text-gray-700 dark:text-gray-300">
-                      {shiftTypes[shift.type].startTime} - {shiftTypes[shift.type].endTime}
-                    </div>
-                  </div>
-                ))}
+      <div className="w-full overflow-x-auto pt-12">
+        <div className="min-w-[768px]">
+          <div className="grid grid-cols-7 gap-3 mb-3">
+            {days.map((day, index) => (
+              <div key={index} className="text-center">
+                <div className="font-medium text-gray-900 dark:text-white mb-1 text-sm">
+                  {format(day, 'EEEE', { locale: language === 'he' ? he : enUS })}
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-full py-1 px-2 inline-block">
+                  {format(day, 'd/M/yyyy')}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+
+          <div className="grid grid-cols-7 gap-3">
+            {days.map((day, dayIndex) => {
+              const dayShifts = getShiftsForDay(day);
+              return (
+                <div
+                  key={dayIndex}
+                  className={`min-h-[200px] bg-gray-50 dark:bg-gray-800/50 rounded-lg p-2 border border-gray-100 dark:border-gray-700 transition-all duration-300 ${
+                    format(day, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
+                      ? 'ring-2 ring-blue-400 dark:ring-blue-600'
+                      : ''
+                  }`}
+                >
+                  <div className="space-y-2">
+                    {dayShifts.length === 0 ? (
+                      <div className="h-full min-h-[60px] flex items-center justify-center">
+                        <span className="text-xs text-gray-400 dark:text-gray-500">
+                          {language === 'he' ? 'אין משמרות' : 'No shifts'}
+                        </span>
+                      </div>
+                    ) : (
+                      dayShifts.map((shift, shiftIndex) => (
+                        <div
+                          key={`${dayIndex}-${shiftIndex}`}
+                          className={`rounded-lg p-2 ${getShiftStyle(shift.type)} border shadow-sm`}
+                        >
+                          <div className="text-sm font-medium">{shift.employeeName}</div>
+                          <div className="text-xs opacity-90">{getShiftLabel(shift.type)}</div>
+                          <div className="text-xs mt-1 opacity-80">{getShiftTime(shift.type)}</div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </DndContext>
+      </div>
     </div>
   );
 } 

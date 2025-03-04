@@ -59,23 +59,93 @@ export default function SmartGraphWidget({ onClick }: SmartGraphWidgetProps) {
 
   const options = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         position: 'top' as const,
+        rtl: true,
+        labels: {
+          font: {
+            family: 'Rubik',
+            size: 12,
+          },
+          padding: 16,
+          boxWidth: 32,
+          boxHeight: 16,
+        },
       },
       title: {
         display: true,
         text: 'נתוני משמרות',
+        font: {
+          family: 'Rubik',
+          size: 14,
+          weight: 'bold' as const,
+        },
+        padding: { top: 10, bottom: 20 },
       },
+      tooltip: {
+        bodyFont: {
+          family: 'Rubik',
+          size: 12,
+        },
+        titleFont: {
+          family: 'Rubik',
+          size: 12,
+          weight: 'bold' as const,
+        },
+        padding: 12,
+        rtl: true,
+        textDirection: 'rtl',
+        displayColors: true,
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleColor: 'white',
+        bodyColor: 'white',
+        borderColor: 'rgba(255, 255, 255, 0.2)',
+        borderWidth: 1,
+      },
+    },
+    scales: {
+      x: {
+        ticks: {
+          font: {
+            family: 'Rubik',
+            size: 11,
+          },
+          maxRotation: 45,
+          minRotation: 45,
+        },
+        grid: {
+          display: false,
+        },
+      },
+      y: {
+        ticks: {
+          font: {
+            family: 'Rubik',
+            size: 11,
+          },
+        },
+        grid: {
+          color: 'rgba(0, 0, 0, 0.1)',
+        },
+      },
+    },
+    interaction: {
+      mode: 'index' as const,
+      axis: 'x' as const,
+      intersect: false,
     },
   };
 
   return (
     <div 
-      className="bg-white dark:bg-gray-800 rounded-xl p-4 cursor-pointer transition-transform hover:scale-[1.02]"
+      className="bg-white dark:bg-gray-800 rounded-xl p-2 sm:p-4 cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.98] touch-manipulation"
       onClick={onClick}
     >
-      <Line data={data} options={options} />
+      <div className="h-[200px] sm:h-[300px]">
+        <Line data={data} options={options} />
+      </div>
     </div>
   );
 } 

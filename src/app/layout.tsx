@@ -1,8 +1,9 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import { Rubik } from 'next/font/google'
-import Sidebar from '@/components/Sidebar';
-import { AppProvider } from '@/contexts/AppContext';
+import ClientLayout from '@/components/ClientLayout'
+import { LanguageProvider } from '@/contexts/LanguageContext'
+import LanguageToggle from '@/components/LanguageToggle'
 
 const rubik = Rubik({ 
   subsets: ['latin', 'hebrew'],
@@ -23,16 +24,14 @@ export default function RootLayout({
   return (
     <html lang="he" dir="rtl" className={`${rubik.variable} dark`}>
       <body className={`${rubik.className} antialiased bg-background text-foreground`}>
-        <AppProvider>
-          <div className="flex min-h-screen">
-            <Sidebar />
-            <main className="flex-1 mr-64">
-              <div className="container py-8">
-                {children}
-              </div>
-            </main>
+        <LanguageProvider>
+          <div className="fixed top-4 left-4 z-50">
+            <LanguageToggle />
           </div>
-        </AppProvider>
+          <ClientLayout>
+            {children}
+          </ClientLayout>
+        </LanguageProvider>
       </body>
     </html>
   )
