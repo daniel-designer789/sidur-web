@@ -41,6 +41,8 @@ export default function SchedulePage() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [isAutoAssigning, setIsAutoAssigning] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [shiftToDelete, setShiftToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     // Mock employees data
@@ -128,7 +130,7 @@ export default function SchedulePage() {
 
   const submitShiftForm = () => {
     // Validate form
-    if (currentShiftForm.employeeId ===.0) {
+    if (currentShiftForm.employeeId === 0) {
       alert(language === 'he' ? 'יש לבחור עובד' : 'Please select an employee');
       return;
     }
@@ -151,6 +153,26 @@ export default function SchedulePage() {
     
     // Close modal
     setShowAddShiftModal(false);
+  };
+
+  const handleDeleteShift = (shiftId: string) => {
+    setShiftToDelete(shiftId);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeleteShift = () => {
+    if (shiftToDelete) {
+      // Filter out the shift with the matching ID
+      setShifts(prev => prev.filter(shift => shift.id !== shiftToDelete));
+      // Close modal and reset state
+      setShowDeleteConfirm(false);
+      setShiftToDelete(null);
+    }
+  };
+
+  const cancelDeleteShift = () => {
+    setShowDeleteConfirm(false);
+    setShiftToDelete(null);
   };
 
   const publishSchedule = () => {
@@ -241,6 +263,10 @@ export default function SchedulePage() {
     selectEmployee: language === 'he' ? 'בחר עובד' : 'Select Employee',
     submit: language === 'he' ? 'הוסף' : 'Add',
     cancel: language === 'he' ? 'ביטול' : 'Cancel',
+    deleteShift: language === 'he' ? 'מחק משמרת' : 'Delete Shift',
+    deleteConfirm: language === 'he' ? 'האם אתה בטוח שברצונך למחוק משמרת זו?' : 'Are you sure you want to delete this shift?',
+    yes: language === 'he' ? 'כן' : 'Yes',
+    no: language === 'he' ? 'לא' : 'No',
   };
 
   return (
@@ -359,8 +385,17 @@ export default function SchedulePage() {
                             {shiftEmployees.length > 0 ? (
                               <div className="space-y-1">
                                 {shiftEmployees.map((shift) => (
-                                  <div key={shift.id} className="flex items-center">
+                                  <div key={shift.id} className="flex items-center justify-between group">
                                     <span className="text-gray-900 dark:text-white">{shift.employeeName}</span>
+                                    <button
+                                      onClick={() => handleDeleteShift(shift.id)}
+                                      className="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                                      aria-label={`${labels.deleteShift} ${shift.employeeName}`}
+                                    >
+                                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                      </svg>
+                                    </button>
                                   </div>
                                 ))}
                               </div>
@@ -428,6 +463,31 @@ export default function SchedulePage() {
                   {labels.submit}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+              {labels.deleteConfirm}
+            </h3>
+            <div className="flex justify-end space-x-3 rtl:space-x-reverse">
+              <button
+                onClick={cancelDeleteShift}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+              >
+                {labels.no}
+              </button>
+              <button
+                onClick={confirmDeleteShift}
+                className="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700"
+              >
+                {labels.yes}
+              </button>
             </div>
           </div>
         </div>

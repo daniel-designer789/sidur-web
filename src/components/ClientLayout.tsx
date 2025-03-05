@@ -2,6 +2,7 @@
 
 import Sidebar from '@/components/Sidebar';
 import { AppProvider } from '@/contexts/AppContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useState, useEffect } from 'react';
 import MobileMenu from '@/components/MobileMenu';
 
@@ -11,6 +12,8 @@ export default function ClientLayout({
   children: React.ReactNode
 }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { direction } = useLanguage();
+  const isRtl = direction === 'rtl';
   
   // Close menu when clicking outside
   useEffect(() => {
@@ -40,8 +43,8 @@ export default function ClientLayout({
   return (
     <AppProvider>
       <div className="relative min-h-screen bg-gray-50 dark:bg-gray-900">
-        {/* Language Toggle - Will be handled in a separate component */}
-        <div className="fixed top-4 right-4 z-50">
+        {/* Mobile menu toggle */}
+        <div className={`fixed top-4 ${isRtl ? 'right-4' : 'left-4'} z-50`}>
           <MobileMenu 
             isOpen={isMobileMenuOpen} 
             setIsOpen={setIsMobileMenuOpen} 
@@ -50,7 +53,7 @@ export default function ClientLayout({
         
         <div className="flex">
           {/* Sidebar for desktop */}
-          <div className="hidden lg:block right-0 w-64 fixed h-screen">
+          <div className={`hidden lg:block ${isRtl ? 'right-0' : 'left-0'} w-64 fixed h-screen`}>
             <Sidebar />
           </div>
           
@@ -59,8 +62,8 @@ export default function ClientLayout({
             className={`lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300 ${isMobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
           >
             <div 
-              className={`fixed top-0 right-0 h-full w-64 bg-white dark:bg-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out mobile-sidebar ${
-                isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+              className={`fixed top-0 ${isRtl ? 'right-0' : 'left-0'} h-full w-64 bg-white dark:bg-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out mobile-sidebar ${
+                isMobileMenuOpen ? 'translate-x-0' : isRtl ? 'translate-x-full' : '-translate-x-full'
               }`}
             >
               <Sidebar />
@@ -68,7 +71,7 @@ export default function ClientLayout({
           </div>
           
           {/* Main Content */}
-          <main className="flex-1 w-full lg:mr-64 transition-all duration-300">
+          <main className={`flex-1 w-full ${isRtl ? 'lg:mr-64' : 'lg:ml-64'} transition-all duration-300`}>
             <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-7xl">
               {children}
             </div>

@@ -3,7 +3,6 @@ import type { Metadata } from 'next'
 import { Rubik } from 'next/font/google'
 import ClientLayout from '@/components/ClientLayout'
 import { LanguageProvider } from '@/contexts/LanguageContext'
-import LanguageToggle from '@/components/LanguageToggle'
 
 const rubik = Rubik({ 
   subsets: ['latin', 'hebrew'],
@@ -25,9 +24,6 @@ export default function RootLayout({
     <html lang="he" dir="rtl" className={`${rubik.variable} dark`}>
       <body className={`${rubik.className} antialiased bg-background text-foreground`}>
         <LanguageProvider>
-          <div className="fixed top-4 left-4 z-50">
-            <LanguageToggle />
-          </div>
           <ClientLayout>
             {children}
           </ClientLayout>

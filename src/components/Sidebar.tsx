@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
+import LanguageToggle from '@/components/LanguageToggle';
 
 const menuItems = {
   he: [
@@ -127,7 +128,12 @@ export default function Sidebar() {
         </ul>
       </nav>
       
-      <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+      <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
+        {/* Language Toggle Button */}
+        <div className="flex justify-center">
+          <LanguageToggle />
+        </div>
+        
         <div className="py-2 px-4 bg-gray-100 dark:bg-gray-700 rounded-lg text-xs text-gray-600 dark:text-gray-400 flex items-center justify-between">
           <span>{language === 'he' ? 'גרסה' : 'Version'}</span>
           <span>1.0.0</span>
