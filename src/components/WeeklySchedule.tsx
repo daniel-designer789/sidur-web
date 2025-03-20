@@ -13,7 +13,13 @@ interface Shift {
   date: string;
 }
 
-export default function WeeklySchedule() {
+interface WeeklyScheduleProps {
+  selectedWeek?: Date;
+  onShiftClick?: (shift: Shift) => void;
+  className?: string;
+}
+
+export default function WeeklySchedule({ selectedWeek, onShiftClick, className = '' }: WeeklyScheduleProps) {
   const { t, language, direction } = useLanguage();
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [weekStart, setWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 0 }));
@@ -28,10 +34,14 @@ export default function WeeklySchedule() {
   }, []);
 
   useEffect(() => {
-    const newWeekStart = startOfWeek(new Date(), { weekStartsOn: 0 });
-    newWeekStart.setDate(newWeekStart.getDate() + (weekOffset * 7));
-    setWeekStart(newWeekStart);
-  }, [weekOffset]);
+    if (selectedWeek) {
+      setWeekStart(startOfWeek(selectedWeek, { weekStartsOn: 0 }));
+    } else {
+      const newWeekStart = startOfWeek(new Date(), { weekStartsOn: 0 });
+      newWeekStart.setDate(newWeekStart.getDate() + (weekOffset * 7));
+      setWeekStart(newWeekStart);
+    }
+  }, [weekOffset, selectedWeek]);
 
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
@@ -45,9 +55,9 @@ export default function WeeklySchedule() {
       case 'morning':
         return 'bg-blue-500 text-white border-blue-600';
       case 'evening':
-        return 'bg-purple-500 text-white border-purple-600';
+        return 'bg-green-500 text-white border-green-600';
       case 'closing':
-        return 'bg-orange-500 text-white border-orange-600';
+        return 'bg-purple-500 text-white border-purple-600';
       default:
         return 'bg-gray-500 text-white border-gray-600';
     }
@@ -93,8 +103,14 @@ export default function WeeklySchedule() {
     setWeekOffset(prev => prev + direction);
   };
 
+  const handleShiftClick = (shift: Shift) => {
+    if (onShiftClick) {
+      onShiftClick(shift);
+    }
+  };
+
   return (
-    <div className="relative">
+    <div className={`relative ${className}`}>
       {/* Week Navigation Controls */}
       <div className="absolute top-0 left-0 z-20 flex items-center space-x-2">
         <button
@@ -201,7 +217,8 @@ export default function WeeklySchedule() {
                       dayShifts.map((shift, shiftIndex) => (
                         <div
                           key={`${dayIndex}-${shiftIndex}`}
-                          className={`rounded-lg p-2 ${getShiftStyle(shift.type)} border shadow-sm`}
+                          className={`rounded-lg p-2 ${getShiftStyle(shift.type)} border shadow-sm cursor-pointer hover:shadow-md transition-shadow`}
+                          onClick={() => handleShiftClick(shift)}
                         >
                           <div className="text-sm font-medium">{shift.employeeName}</div>
                           <div className="text-xs opacity-90">{getShiftLabel(shift.type)}</div>
